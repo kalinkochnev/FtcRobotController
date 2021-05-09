@@ -1,22 +1,22 @@
 package org.firstinspires.ftc.teamcode.helpers;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.tntcorelib.util.RealSimplerHardwareMap;
 
-import java.util.ArrayList;
-import java.util.Collections;
-
-import static org.firstinspires.ftc.teamcode.helpers.Utils.getMax;
-import static org.firstinspires.ftc.teamcode.helpers.Utils.getMin;
+import java.util.Arrays;
 
 public class Robot {
     public Motors motors;
 //    Sensors sensors;
+    Telemetry telemetry;
     LinearOpMode opMode;
 
     public Robot(LinearOpMode opMode) {
-        this.motors = new Motors(opMode);
-//        this.sensors = new Sensors(opMode);
+        RealSimplerHardwareMap hardwareMap = new RealSimplerHardwareMap(opMode.hardwareMap);
+
+        this.motors = new Motors(hardwareMap);
+        this.telemetry = opMode.telemetry;
         this.opMode = opMode;
 
     }
@@ -147,30 +147,23 @@ public class Robot {
 
     public void holdAngleTest2(double maxPower, double distance, double angleHold) {
         this.motors.resetEncoders();
+        angleHold = Math.toRadians(angleHold);
 
-        double[] motorPowers = this.motors.motorTranslationWeights(angleHold, maxPower);
+        double[] motorPowers = this.motors.translationWeights(angleHold, maxPower);
         this.motors.setPowers(motorPowers);
 
-        double compensatedTarget = Motors.compensateDistance(distance);
-        double[] distWheelsSpun = new double[4];
-        double distTravelledInDir = 0;
+        double targetTicks = Motors.distanceToEncoderTicks(distance);
+        int tickTravelled = 0;
 
-        while (distTravelledInDir < compensatedTarget && !this.opMode.isStopRequested()) {
-            PVector[] movementComps = new PVector[4];
-            int[] positions = this.motors.getMotorPositions();
+        while (tickTravelled < targetTicks && !this.opMode.isStopRequested()) {
+            telemetry.addData("target: ", targetTicks);
+            telemetry.addData("Motor positions", Arrays.toString(this.motors.getMotorPositions()));
 
-            // Calculate how far the motors have spun and create position vectors that will determine resultant position
-            for (int motor = 0; motor < 4; motor++) {
-                distWheelsSpun[motor] = Motors.compensateDistance(Motors.encoderTicksToDistance(positions[motor]));
-
-                // TODO figure out what directions the motors are supposed to move and modify this
-                double angleOfMovement = motor * (Math.PI/2) + Math.PI/4; // The angle the motor's direction is moving the robot
-                movementComps[motor] = PVector.fromAngle(distWheelsSpun[motor], angleOfMovement); // The distance spun can be negative, so should factor in if wheel is reversed
-            }
-
-            // Calculate resultant distance travelled in the direction specified, based on average vector sum
-            distTravelledInDir = PVector.scalarDivide(PVector.add(movementComps), 4).getMagnitude();
+            tickTravelled = (int)(Math.round(this.motors.getNetEncoderVector().getMagnitude() / 2.828898391 * 100) / 100);
+            telemetry.addData("ticks: ", tickTravelled);
+            telemetry.update();
         }
+        motors.setPowers(0);
 
     }
 

@@ -15,8 +15,19 @@
 apply from: '../build.common.gradle'
 apply from: '../build.dependencies.gradle'
 
+repositories {
+    // The following repositories are needed for TNT FTC Core dependencies:
+    maven { url 'https://repo1.maven.org/maven2' }
+    // other repositories
+    jcenter()
+    google()
+
+}
+
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
     implementation project(':FtcRobotController')
     annotationProcessor files('lib/OpModeAnnotationProcessor.jar')
+    testImplementation 'com.google.guava:guava-testlib:27.1-android'
+
 }

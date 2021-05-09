@@ -1,35 +1,33 @@
 package org.firstinspires.ftc.teamcode.helpers;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.tntcorelib.util.SimplerHardwareMap;
 
 public class Motors {
-    public static final double GEAR_RATIO = 1; // output/input teeth
+    public static final double GEAR_RATIO = 16.0/32.0; // output/input teeth
     public static final int TICKS_PER_MOTOR_ROTATION = 1120;
     public static final int TICKS_PER_WHEEL_ROTATION = (int)((TICKS_PER_MOTOR_ROTATION * GEAR_RATIO) + 0.5);
     public static final double WHEEL_DIAMETER = 0.1016; // [meters]
     public static final double WHEEL_CIRCUMFERENCE = Math.PI * WHEEL_DIAMETER; // [meters]
     public static final double DISTANCE_PER_TICK = WHEEL_CIRCUMFERENCE / TICKS_PER_WHEEL_ROTATION;
 
-    HardwareMap hardwareMap;
+    // Modify this number so the proper distance is travelled
+    public static final double DIST_MULTIPLIER = Math.sqrt(2); // This number was magically calculated empirically
+
+    SimplerHardwareMap hardwareMap;
 
     protected DcMotor lfMotor, rfMotor, rbMotor, lbMotor;
 
-    public Motors(OpMode opMode) {
-        this.hardwareMap = opMode.hardwareMap;
+    public Motors(SimplerHardwareMap hardwareMap) {
+        this.hardwareMap = hardwareMap;
 
-        lfMotor = hardwareMap.dcMotor.get("lfMotor");
-        rfMotor = hardwareMap.dcMotor.get("rfMotor");
-        lbMotor = hardwareMap.dcMotor.get("lbMotor");
-        rbMotor = hardwareMap.dcMotor.get("rbMotor");
-
-
-//        this.rfMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-//        this.rbMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        lfMotor = this.hardwareMap.get(DcMotor.class, "lfMotor");
+        rfMotor = this.hardwareMap.get(DcMotor.class,"rfMotor");
+        lbMotor = this.hardwareMap.get(DcMotor.class,"lbMotor");
+        rbMotor = this.hardwareMap.get(DcMotor.class,"rbMotor");
 
         this.setAllZeroPowerBehaviors(DcMotor.ZeroPowerBehavior.BRAKE);
         this.setAllRunModes(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -45,29 +43,6 @@ public class Motors {
     }
 
     public static double encoderTicksToDistance(int ticks) { return ticks * DISTANCE_PER_TICK; }
-    /**
-     * This is a method that converts a desired distance into an "actual" distance to travel, which is based on how
-     * the mecanum wheels interact with the surface. Often times there is slippage and the wheels fall short of their target
-     * so this returns a compensated distance, which is often paired with the method distanceToEncoderTicks
-     * @return
-     */
-    public static double compensateDistance(double desiredDistance) {
-        /*How to calculate this constant:
-        1. Turn on a pair of motors (on opposite corners) so the robot travel at a 45 degree angle. Make sure you set
-        the robot to travel some test distance you expect it to reach (example, 5 meters at a 45 degree angle)
-        2. Record how far the robot travelled side to side and forward and back under the variables realX and realY
-        3. Repeat this trial multiple times and for opposite pairs of wheels, and take the average realX and realY and
-        input it here
-         */
-        double expectedDist = 1; // This is the amount your expected it to travel in meters at a 45 degree angle
-
-        // Do this trial multiple times
-        final double realX = 0; // This is the amount the robot travelled side to side from the start pt to the end pt
-        final double realY = 0; // This is the amount the robot travelled forward from start pt to end pt
-        final double actualDist = Math.sqrt(Math.pow(realX, 2) + Math.pow(realY,2));
-
-        return desiredDistance * (expectedDist/actualDist);
-    }
 
     public DcMotor[] getMotors() {
         return new DcMotor[]{lfMotor, rfMotor, rbMotor, lbMotor};
@@ -85,9 +60,19 @@ public class Motors {
         }
     }
 
+    /**
+     * Sets powers for each motor. It uses configured motor directions and reverses the power to make it spin in the right
+     * direction
+     * @param power power for all motors
+     */
     public void setPowers(double power) {
         setPowers(new double[]{power, power, power, power});
     }
+    /**
+     * Sets powers for each motor. It uses configured motor directions and reverses the power to make it spin in the right
+     * direction
+     * @param powers powers for each individual motors
+     */
     public void setPowers(double[] powers) {
         powers = this.applyMotorDirections(powers);
         DcMotor[] motors = getMotors();
@@ -107,39 +92,32 @@ public class Motors {
      * Retrieves motor encoder positions. Follows motor index convention: First index refers to front left wheel, and goes clockwise
      */
     public int[] getMotorPositions() {
-        return new int[]{lfMotor.getCurrentPosition(), rfMotor.getCurrentPosition(), lbMotor.getCurrentPosition(), rbMotor.getCurrentPosition()};
-    }
-
-//    /**
-//     * This method returns an array of encoder positions that compensate for the power of the motor. So if a motor is going
-//     * at 0.5 power, and it travels at 10 ticks, at full power it would travel 20 ticks (or this is what I would like to believe,
-//     * no idea if this is actually true) // TODO make sure this works
-//     * This is useful for when you want to reach a certain distance but need to figure out if you have reached a certain
-//     * target distance.
-//     * @param motorPowers an array of motor powers to calculate the "virtual" ticks
-//     */
-//    public int[] getVirtualPositions(double[] motorPowers, ) {
-//        int[] virtualTicks = new int[4];
-//        int[] actualTicks = getMotorPositions();
-//        for (int motor = 0; motor < 4; motor++ ){
-//            virtualTicks[motor] = (int)((1/motorPowers[motor]) * actualTicks[motor]);
-//        }
-//        return virtualTicks;
-//    }
-//
-    public int[] diffInPositions(int[] oldPositions) {
-        int[] diff = new int[4];
-        int[] newPositions = getMotorPositions();
-
-        for (int motor = 0; motor < 4; motor++) {
-            diff[motor] = newPositions[motor] - oldPositions[motor];
-        }
-        return diff;
+        int[] positions = new int[]{lfMotor.getCurrentPosition(), rfMotor.getCurrentPosition(), rbMotor.getCurrentPosition(), lbMotor.getCurrentPosition()};
+        return this.applyMotorDirections(positions);
     }
 
     /**
+     * This method returns an array of encoder positions that compensate for the power of the motor. So if a motor is going
+     * at 0.5 power, and it travels at 10 ticks, at full power it would travel 20 ticks (or this is what I would like to believe,
+     * no idea if this is actually true) // TODO make sure this works
+     * This is useful for when you want to reach a certain distance but need to figure out if you have reached a certain
+     * target distance.
+     * @param motorPowers an array of motor powers to calculate the "virtual" ticks
+     */
+    public int[] getVirtualPositions(double[] motorPowers) {
+        int[] virtualTicks = new int[4];
+        int[] actualTicks = getMotorPositions();
+        for (int motor = 0; motor < 4; motor++ ){
+            virtualTicks[motor] = (int)((1-motorPowers[motor]) * actualTicks[motor]);
+        }
+        return virtualTicks;
+    }
+
+
+
+    /**
      * Returns array for directions of motors. This is used to configure what direction motors are supposed to spin.
-     * A -1 implies reversed spin while +1 indicates as is. Configure this so that the robot moves forward when you
+     * A -1 implies reversed spin while +1 indicates as is. Configure this so that all wheels move in same direction
      * set all the powers to some value.
      * @return An array of -1 or 1's.
      */
@@ -162,6 +140,9 @@ public class Motors {
         }
         return motorPowers;
     }
+    public int[] applyMotorDirections(int[] motorEncoderTicks) {
+        return Utils.toIntArr(this.applyMotorDirections(Utils.toDoubleArr(motorEncoderTicks)));
+    }
 
     /**
      * Returns motor power weights which allow translation across a plane for a specified angle;
@@ -169,7 +150,7 @@ public class Motors {
      * @param angle Angle, specified in radians where 0 is right.
      * @param powerMag The power magnitude of the movement (basically speed). Between 0 and 1.
      */
-    public double[] motorTranslationWeights(double angle, double powerMag) {
+    public double[] translationWeights(double angle, double powerMag) {
         double[] weights = new double[4];
         double cornerSet1 = powerMag * Math.sin(angle + Math.PI / 4); // This is used for the front left wheel and bottom right wheel
         double cornerSet2 = powerMag * Math.sin(angle - Math.PI / 4); // This is used for the front right wheel and bottom left wheel
@@ -181,13 +162,28 @@ public class Motors {
         return weights;
     }
 
-    /**This calculates the new motor powers on top of translation movement to create a spin. Compensates for values > 1
+    public PVector getNetEncoderVector() {
+        return this.getNetEncoderVector(this.getMotorPositions());
+    }
+    public PVector getNetEncoderVector(int[] encoderPositions) {
+        PVector[] wheelVectors = new PVector[4];
+
+        double pi = Math.PI;
+        double[] wheelDirections = {3*pi/4, pi/4, 3*pi/4, pi/4}; // This indicates the default direction the wheels act in when a power is applied to them
+
+        for (int motor = 0; motor < 4; motor++) {
+            wheelVectors[motor] = PVector.fromAngle(encoderPositions[motor], wheelDirections[motor]); // The distance spun can be negative, so should factor in if wheel is reversed
+        }
+        PVector resultant = PVector.add(wheelVectors).scalarDivide(2 * DIST_MULTIPLIER);
+        return resultant; // Divide by two because vectors are really counted twice
+    }
+
+    /**This calculates the new motor powers to create a spin. Compensates for values > 1
      * @param angularPower the angular velocity to spin the robot at. Same as polar plane. + number implies counter clockwise, - clockwise.
      * @param translationalPower power magnitude of the *translation* movement. Between 0 and 1
      * @return new motor powers
      */
-    private double[] motorRotationPowers(double angularPower, double translationalPower) {
-        double[] powers = motorTranslationWeights(angularPower, translationalPower);
+    private double[] motorRotationPowers(double angularPower, double[] powers) {
 
         // TODO possibly need to adjust sign of power for turns
         // Add the rotational power to translational power. See https://seamonsters-2605.github.io/archive/mecanum/ for explanation

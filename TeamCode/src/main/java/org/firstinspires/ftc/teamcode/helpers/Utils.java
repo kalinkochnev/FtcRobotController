@@ -46,4 +46,13 @@ public class Utils {
         }
         return newArr;
     }
+
+    public static int[] toIntArr(double[] arr) {
+        int[] newArr = new int[arr.length];
+        for (int i = 0; i < arr.length; i++) {
+            newArr[i] = (int)arr[i];
+        }
+        return newArr;
+    }
+
 }

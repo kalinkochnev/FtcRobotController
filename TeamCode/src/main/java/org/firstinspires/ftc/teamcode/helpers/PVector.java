@@ -26,11 +26,21 @@ public class PVector {
         return PVector.add(new PVector[]{p1, p2});
     }
 
-    public static PVector scalarDivide(PVector p, double amount) {
-        return new PVector(p.x/amount, p.y/amount);
+    public PVector scalarDivide(double amount) {
+        return new PVector(this.x/amount, this.y/amount);
     }
 
     public double getMagnitude() {
         return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+    }
+
+    public static double dotProd(PVector p1, PVector p2) {
+        return p1.x * p2.x + p1.y * p2.y;
+    }
+    public String toString() {
+        return "x: " + this.x + " --- " + "y: " + this.y + " --- " + this.getMagnitude();
+    }
+    public boolean equals(PVector other) {
+        return (this.x == other.x) && (this.y == other.y);
     }
 }
