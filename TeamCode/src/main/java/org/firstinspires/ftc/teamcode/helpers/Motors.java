@@ -15,7 +15,7 @@ public class Motors {
     public static final double DISTANCE_PER_TICK = WHEEL_CIRCUMFERENCE / TICKS_PER_WHEEL_ROTATION;
 
     // Modify this number so the proper distance is travelled
-    public static final double DIST_MULTIPLIER = Math.sqrt(2); // This number was magically calculated empirically
+    public static final double DIST_MULTIPLIER = Math.sqrt(2); // This number was magically calculated empirically. By luck it was sqrt(2)
 
     SimplerHardwareMap hardwareMap;
 
@@ -96,24 +96,6 @@ public class Motors {
         return this.applyMotorDirections(positions);
     }
 
-    /**
-     * This method returns an array of encoder positions that compensate for the power of the motor. So if a motor is going
-     * at 0.5 power, and it travels at 10 ticks, at full power it would travel 20 ticks (or this is what I would like to believe,
-     * no idea if this is actually true) // TODO make sure this works
-     * This is useful for when you want to reach a certain distance but need to figure out if you have reached a certain
-     * target distance.
-     * @param motorPowers an array of motor powers to calculate the "virtual" ticks
-     */
-    public int[] getVirtualPositions(double[] motorPowers) {
-        int[] virtualTicks = new int[4];
-        int[] actualTicks = getMotorPositions();
-        for (int motor = 0; motor < 4; motor++ ){
-            virtualTicks[motor] = (int)((1-motorPowers[motor]) * actualTicks[motor]);
-        }
-        return virtualTicks;
-    }
-
-
 
     /**
      * Returns array for directions of motors. This is used to configure what direction motors are supposed to spin.
@@ -169,18 +151,25 @@ public class Motors {
         PVector[] wheelVectors = new PVector[4];
 
         double pi = Math.PI;
-        double[] wheelDirections = {3*pi/4, pi/4, 3*pi/4, pi/4}; // This indicates the default direction the wheels act in when a power is applied to them
+        // This indicates the default direction the wheels act in when a positive power is applied to them. If this is not the
+        // case, configure the motor directions in getMotorDirections()
+        double[] wheelDirections = {3 * pi / 4, pi / 4, 3 * pi / 4, pi / 4};
 
         for (int motor = 0; motor < 4; motor++) {
             wheelVectors[motor] = PVector.fromAngle(encoderPositions[motor], wheelDirections[motor]); // The distance spun can be negative, so should factor in if wheel is reversed
         }
-        PVector resultant = PVector.add(wheelVectors).scalarDivide(2 * DIST_MULTIPLIER);
-        return resultant; // Divide by two because vectors are really counted twice
+
+        // Divide by two because vectors are really counted twice and divide by sqrt(2) b/c we want to have the same magnitude
+        // as the individual vectors. This is possible because of the symmetry of the force vectors from the mecanum wheels
+        PVector resultant = PVector.add(wheelVectors).scalarDivide(2 * Math.sqrt(2));
+        return resultant;
     }
 
-    /**This calculates the new motor powers to create a spin. Compensates for values > 1
+    /**
+     * This calculates the new motor powers to create a spin. Compensates for values > 1
+     *
      * @param angularPower the angular velocity to spin the robot at. Same as polar plane. + number implies counter clockwise, - clockwise.
-     * @param translationalPower power magnitude of the *translation* movement. Between 0 and 1
+     * @param powers       the existing powers to apply a rotation to
      * @return new motor powers
      */
     private double[] motorRotationPowers(double angularPower, double[] powers) {

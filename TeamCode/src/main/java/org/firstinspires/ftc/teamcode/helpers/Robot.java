@@ -123,27 +123,6 @@ public class Robot {
 //        this.motors.setPowers(new double[]{0, 0, 0, 0});
 //    }
 
-//    public double getNearestMultipleOf90() {
-//        double currentAngle = this.sensors.imu.getIMUAngleConverted();
-//
-//        double[] potentialValues = {0, 90, 180, 270};
-//
-//        double[] diffs = new double[potentialValues.length];
-//
-//        for (int i = 0; i < potentialValues.length; i++) {
-//            diffs[i] = Math.abs(getAngleDifference(currentAngle, potentialValues[i]));
-//        }
-//
-//        ArrayList<Double> diffsArrayList = new ArrayList<>();
-//        for(double diff : diffs) {
-//            diffsArrayList.add(diff);
-//        }
-//
-//        double min = Collections.min(diffsArrayList);
-//        int minIndex = diffsArrayList.indexOf(min);
-//
-//        return potentialValues[minIndex];
-//    }
 
     public void holdAngleTest2(double maxPower, double distance, double angleHold) {
         this.motors.resetEncoders();
@@ -159,7 +138,7 @@ public class Robot {
             telemetry.addData("target: ", targetTicks);
             telemetry.addData("Motor positions", Arrays.toString(this.motors.getMotorPositions()));
 
-            tickTravelled = (int)(Math.round(this.motors.getNetEncoderVector().getMagnitude() / 2.828898391 * 100) / 100);
+            tickTravelled = (int) (Math.round(this.motors.getNetEncoderVector().getMagnitude() * 100) / 100);
             telemetry.addData("ticks: ", tickTravelled);
             telemetry.update();
         }
