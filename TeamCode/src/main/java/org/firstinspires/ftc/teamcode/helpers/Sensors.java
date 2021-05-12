@@ -26,11 +26,13 @@ public class Sensors {
 //        this.color = new Color();
     }
 
-    class IMU {
+    public class IMU {
         private BNO055IMU imu;
+
         IMU() {
             initIMU();
         }
+
         public void initIMU() {
             BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
             parameters.mode = BNO055IMU.SensorMode.IMU;
@@ -47,16 +49,17 @@ public class Sensors {
         }
 
         public double getAngle() {
+            // The AxesOrder depends on how the expansion hub is mounted
             Orientation orientation = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             return orientation.firstAngle;
         }
 
         public double getAngleConverted() {
-            // The AxesOrder depends on how the expansion hub is mounted
             double angle = getAngle();
             angle = angle < 0 ? angle + 360 : angle;
             return angle;
         }
+
     }
 
     public class Distance {

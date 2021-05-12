@@ -19,10 +19,8 @@ public class FirstOpMode extends LinearOpMode {
             continue;
         }
 
-        this.robot.rotate(0.1, 10);
-        sleep(1000);
-        this.robot.rotate(0.1, -10);
-        sleep(1000);
+        this.robot.rotate(0.1, 180);
+        this.robot.rotate(0.1, -180);
 
         while (!this.isStopRequested()) {
             continue;

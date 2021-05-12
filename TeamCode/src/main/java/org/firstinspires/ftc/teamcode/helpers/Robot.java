@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class Robot {
     public Motors motors;
-    Sensors sensors;
+    public Sensors sensors;
     Telemetry telemetry;
     LinearOpMode opMode;
 
@@ -18,6 +18,7 @@ public class Robot {
         this.motors = new Motors(hardwareMap);
         this.telemetry = opMode.telemetry;
         this.opMode = opMode;
+        this.sensors = new Sensors(opMode);
 
     }
     /**
@@ -122,12 +123,29 @@ public class Robot {
 //
 //        this.motors.setPowers(new double[]{0, 0, 0, 0});
 //    }
-    public void moveCardinal(double maxPower, double distance, double angleHold) {
-        this.motors.resetEncoders();
+
+    /**
+     * Strafes the robot in the direction of the specified angle at the maxPower provided
+     *
+     * @param power
+     * @param angleHold
+     */
+    public void moveCardinal(double power, double angleHold) {
         angleHold = Math.toRadians(angleHold);
 
-        double[] motorPowers = this.motors.translationWeights(angleHold, maxPower);
+        double[] motorPowers = this.motors.translationWeights(angleHold, power);
         this.motors.setPowers(motorPowers);
+    }
+
+    /**
+     * Strafes the robot in the direction of the specified angle at the maxPower provided for a certain distance.
+     *
+     * @param maxPower
+     * @param angleHold
+     */
+    public void moveCardinal(double maxPower, double distance, double angleHold) {
+        this.motors.resetEncoders();
+        this.moveCardinal(maxPower, angleHold);
 
         double targetTicks = Motors.distanceToEncoderTicks(distance);
         int tickTravelled = 0;
@@ -139,67 +157,37 @@ public class Robot {
 
     }
 
+    /**
+     * Rotates the robot at the specified angular power. Negative angular means counter clockwise rotation.
+     *
+     * @param angularPower
+     */
+    public void rotate(double angularPower) {
+        double[] rotationPowers = this.motors.motorRotationPowers(angularPower, new double[]{0, 0, 0, 0});
+        this.motors.setPowers(rotationPowers);
+    }
+
+    /**
+     * Rotates the robot at the specified angular power to reach a final angle
+     *
+     * @param angularPower
+     * @param angle
+     */
     public void rotate(double angularPower, double angle) {
         this.motors.resetEncoders();
 
-        angularPower = Math.copySign(angularPower, angle); // Copy the sign of the angle and apply it to the power to be used w/ motorRotationPowers
-        double[] rotationPowers = this.motors.motorRotationPowers(Math.copySign(angularPower, angle), new double[]{0, 0, 0, 0});
-        this.motors.setPowers(rotationPowers);
-        
+        double currentAngle = this.sensors.imu.getAngleConverted();
+        double targetAngle = currentAngle + angle;
+
+        angularPower = Math.copySign(angularPower, angle); // Copy the sign of the angle and apply it to the power to set rotation direction
+        this.rotate(angularPower);
+
+        while (Math.abs(currentAngle - targetAngle) > 0 && !this.opMode.isStopRequested()) {
+            currentAngle = this.sensors.imu.getAngleConverted();
+        }
+        this.motors.setPowers(0);
     }
 
-
-    // ------------------------------- Rotation -----------------------------------------------------------------------//
-    public static double getAngleDifference(double currentAngle, double targetAngle) {
-
-        currentAngle = currentAngle % 360;
-        targetAngle = targetAngle % 360;
-
-        currentAngle = currentAngle < 0 ? currentAngle + 360 : currentAngle;
-        targetAngle = targetAngle < 0 ? targetAngle + 360 : targetAngle;
-
-        double angleDiff = targetAngle - currentAngle;
-
-        if (Math.abs(angleDiff) <= 180) {
-            return angleDiff;
-        }
-        else {
-            if (angleDiff > 0) {
-                return angleDiff - 360;
-            }
-            else {
-                return 360 + angleDiff;
-            }
-        }
-    }
-
-    public double getAngleDifferenceInDirection(String direction, double currentAngle, double targetAngle) {
-
-        currentAngle = currentAngle % 360;
-        targetAngle = targetAngle % 360;
-
-        currentAngle = currentAngle < 0 ? currentAngle + 360 : currentAngle;
-        targetAngle = targetAngle < 0 ? targetAngle + 360 : targetAngle;
-
-        double angleDiff = targetAngle - currentAngle;
-
-        if (direction.equals("ccw")) {
-            if (angleDiff > 0) {
-                return angleDiff;
-            }
-            else {
-                return (360 - currentAngle) + targetAngle;
-            }
-        }
-        else {
-            if (angleDiff < 0) {
-                return angleDiff;
-            }
-            else {
-                return (targetAngle - 360) - currentAngle;
-            }
-        }
-    }
     /**
      * This automatically tries to maintain a specified angle when rotating. Also ramps up/down as it starts/ends it's movement to be more accurate.
      * @param rotationMaxPow max speed of the robot during rotation
