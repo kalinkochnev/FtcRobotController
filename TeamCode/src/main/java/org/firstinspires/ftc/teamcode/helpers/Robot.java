@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class Robot {
     public Motors motors;
-//    Sensors sensors;
+    Sensors sensors;
     Telemetry telemetry;
     LinearOpMode opMode;
 
@@ -122,9 +122,7 @@ public class Robot {
 //
 //        this.motors.setPowers(new double[]{0, 0, 0, 0});
 //    }
-
-
-    public void holdAngleTest2(double maxPower, double distance, double angleHold) {
+    public void moveCardinal(double maxPower, double distance, double angleHold) {
         this.motors.resetEncoders();
         angleHold = Math.toRadians(angleHold);
 
@@ -135,16 +133,21 @@ public class Robot {
         int tickTravelled = 0;
 
         while (tickTravelled < targetTicks && !this.opMode.isStopRequested()) {
-            telemetry.addData("target: ", targetTicks);
-            telemetry.addData("Motor positions", Arrays.toString(this.motors.getMotorPositions()));
-
-            tickTravelled = (int) (Math.round(this.motors.getNetEncoderVector().getMagnitude() * 100) / 100);
-            telemetry.addData("ticks: ", tickTravelled);
-            telemetry.update();
+            tickTravelled = (int) (Math.round(this.motors.getNetPositionVector().getMagnitude() * 100) / 100);
         }
         motors.setPowers(0);
 
     }
+
+    public void rotate(double angularPower, double angle) {
+        this.motors.resetEncoders();
+
+        angularPower = Math.copySign(angularPower, angle); // Copy the sign of the angle and apply it to the power to be used w/ motorRotationPowers
+        double[] rotationPowers = this.motors.motorRotationPowers(Math.copySign(angularPower, angle), new double[]{0, 0, 0, 0});
+        this.motors.setPowers(rotationPowers);
+        
+    }
+
 
     // ------------------------------- Rotation -----------------------------------------------------------------------//
     public static double getAngleDifference(double currentAngle, double targetAngle) {

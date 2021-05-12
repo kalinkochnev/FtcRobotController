@@ -25,10 +25,11 @@ public class Utils {
         return absoluteValues(toDoubleArr(arr));
     }
     public static double[] absoluteValues(double[] arr) {
+        double[] newArr = arr.clone();
         for (int i = 0; i < arr.length; i++) {
-            arr[i] = Math.abs(arr[i]);
+            newArr[i] = Math.abs(arr[i]);
         }
-        return arr;
+        return newArr;
     }
 
     public static double getSum(double[] arr) {

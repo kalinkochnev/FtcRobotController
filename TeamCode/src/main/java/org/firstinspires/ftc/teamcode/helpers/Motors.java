@@ -1,10 +1,8 @@
 package org.firstinspires.ftc.teamcode.helpers;
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.tntcorelib.util.SimplerHardwareMap;
+
 
 public class Motors {
     public static final double GEAR_RATIO = 16.0/32.0; // output/input teeth
@@ -21,13 +19,17 @@ public class Motors {
 
     protected DcMotor lfMotor, rfMotor, rbMotor, lbMotor;
 
+    public enum MotorSide {
+        LEFT, FRONT, RIGHT, BACK
+    }
+
     public Motors(SimplerHardwareMap hardwareMap) {
         this.hardwareMap = hardwareMap;
 
         lfMotor = this.hardwareMap.get(DcMotor.class, "lfMotor");
-        rfMotor = this.hardwareMap.get(DcMotor.class,"rfMotor");
-        lbMotor = this.hardwareMap.get(DcMotor.class,"lbMotor");
-        rbMotor = this.hardwareMap.get(DcMotor.class,"rbMotor");
+        rfMotor = this.hardwareMap.get(DcMotor.class, "rfMotor");
+        lbMotor = this.hardwareMap.get(DcMotor.class, "lbMotor");
+        rbMotor = this.hardwareMap.get(DcMotor.class, "rbMotor");
 
         this.setAllZeroPowerBehaviors(DcMotor.ZeroPowerBehavior.BRAKE);
         this.setAllRunModes(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -39,13 +41,24 @@ public class Motors {
      * @return
      */
     public static int distanceToEncoderTicks(double distance) {
-        return (int)((distance / DISTANCE_PER_TICK) + 0.5);
+        return (int) ((distance / DISTANCE_PER_TICK) + 0.5);
     }
 
-    public static double encoderTicksToDistance(int ticks) { return ticks * DISTANCE_PER_TICK; }
+    public static double encoderTicksToDistance(int ticks) {
+        return ticks * DISTANCE_PER_TICK;
+    }
 
     public DcMotor[] getMotors() {
         return new DcMotor[]{lfMotor, rfMotor, rbMotor, lbMotor};
+    }
+
+    public double[] getMotorPowers() {
+        double[] powers = new double[4];
+        DcMotor[] motors = this.getMotors();
+        for (int motor = 0; motor < 4; motor++) {
+            powers[motor] = motors[motor].getPower();
+        }
+        return powers;
     }
 
     public void resetEncoders() {
@@ -81,6 +94,31 @@ public class Motors {
         }
     }
 
+    /**
+     * Returns indexes of motors to get for that side
+     *
+     * @param side
+     * @return
+     */
+    public int[] getMotorsIndexesForSide(MotorSide side) {
+        int startIndex = 0; // The start index is the index of the first motor on the specified side
+        switch (side) {
+            case LEFT:
+                startIndex = 3;
+                break;
+            case FRONT:
+                startIndex = 0;
+                break;
+            case RIGHT:
+                startIndex = 1;
+                break;
+            case BACK:
+                startIndex = 2;
+                break;
+        }
+        return new int[]{startIndex, (startIndex + 1) % 4}; // This loops back to first motor so array not out of bounds
+    }
+
     private void setAllZeroPowerBehaviors(DcMotor.ZeroPowerBehavior zeroPowerBehavior) {
         for (DcMotor motor : getMotors()) {
             motor.setZeroPowerBehavior(zeroPowerBehavior);
@@ -89,7 +127,8 @@ public class Motors {
 
 
     /**
-     * Retrieves motor encoder positions. Follows motor index convention: First index refers to front left wheel, and goes clockwise
+     * Retrieves motor encoder positions that accounts for motor directions. Follows motor index convention: First index
+     * refers to front left wheel, and goes clockwise
      */
     public int[] getMotorPositions() {
         int[] positions = new int[]{lfMotor.getCurrentPosition(), rfMotor.getCurrentPosition(), rbMotor.getCurrentPosition(), lbMotor.getCurrentPosition()};
@@ -144,10 +183,17 @@ public class Motors {
         return weights;
     }
 
-    public PVector getNetEncoderVector() {
-        return this.getNetEncoderVector(this.getMotorPositions());
+    /**
+     * This adds up the vector positions that the movement of the wheels creates. Can specify encoder positions or
+     * default uses the current encoder positions.
+     *
+     * @return PVector of the robot's current position since the last encoder reset by default
+     */
+    public PVector getNetPositionVector() {
+        return this.getNetPositionVector(this.getMotorPositions());
     }
-    public PVector getNetEncoderVector(int[] encoderPositions) {
+
+    public PVector getNetPositionVector(int[] encoderPositions) {
         PVector[] wheelVectors = new PVector[4];
 
         double pi = Math.PI;
@@ -165,24 +211,37 @@ public class Motors {
         return resultant;
     }
 
+
+    public double[] reverseMotorsOnSide(double[] powers, MotorSide side) {
+        int[] sideIndexes = this.getMotorsIndexesForSide(side);
+        powers[sideIndexes[0]] *= -1;
+        powers[sideIndexes[1]] *= -1;
+        return powers;
+    }
+
     /**
-     * This calculates the new motor powers to create a spin. Compensates for values > 1
+     * This calculates the new motor powers to create a spin. Compensates for values > 1.
      *
      * @param angularPower the angular velocity to spin the robot at. Same as polar plane. + number implies counter clockwise, - clockwise.
      * @param powers       the existing powers to apply a rotation to
      * @return new motor powers
      */
-    private double[] motorRotationPowers(double angularPower, double[] powers) {
+    public double[] motorRotationPowers(double angularPower, double[] powers) {
+        // If we want to go clockwise, we speed up left motors and right motors (in opp direction), and vice versa
+        double[] powToAdd = {angularPower, angularPower, angularPower, angularPower};
 
-        // TODO possibly need to adjust sign of power for turns
-        // Add the rotational power to translational power. See https://seamonsters-2605.github.io/archive/mecanum/ for explanation
+        // Angular power is already negative when you want to go clockwise (right motors are reversed), so either way
+        // you can just reverse the left motors regardless of clockwise vs counter-clockwise
+        this.reverseMotorsOnSide(powToAdd, MotorSide.LEFT);
+
         for (int motor = 0; motor < 4; motor++) {
-            powers[motor] += angularPower;
+            powers[motor] += powToAdd[motor];
         }
 
-        // Divide by the max value power to scale value from -1 to 1
+
+        // Divide by the max value power to scale value from -1 to 1 if exceeds 1
         double absMaxPower = Utils.getMax(Utils.absoluteValues(powers));
-        if (absMaxPower != 0) {
+        if (absMaxPower > 1) {
             for (int motor = 0; motor < 4; motor++) {
                 powers[motor] /= absMaxPower;
             }

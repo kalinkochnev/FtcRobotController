@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode.helpers;
 
-import fakes.*;
+import fakes.FakeHardwareMap;
+import fakes.FakeTelemetry;
 import fakes.drive.FakeDcMotor;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMotors {
@@ -34,42 +35,59 @@ public class TestMotors {
         assertArrayEquals(weights, expected);
     }
 
-    @Test
-    public void testCompensateDistance() {
-        // Lets say the robot travels 0.98 meters horizontally and 0.90 meters verically when it should be doing 1 and 1
-        motors.realX = 0.98;
-        motors.realY = 0.9;
-        motors.expectedDist = Math.sqrt(2);
-
-        // We expect the x component to be 1.02 bigger and the y to be 1.1 bigger
-        double xComp = 7;
-        double yComp = 32;
-        double distanceToGo = motors.compensateDistance(Math.sqrt(Math.pow(xComp, 2) + Math.pow(yComp, 2)), Math.atan(yComp/xComp));
-
-        double newHypotenuse = Math.sqrt(Math.pow(xComp * (1 / motors.realX), 2) + Math.pow(yComp * 1/(motors.realY), 2));
-
-        assertEquals(newHypotenuse, distanceToGo, 0.00001);
-
-    }
 
     @Test
     public void testAddEncoderVectors() {
-//        //  Moving 45 degrees
-//        int[] fakeTicks = new int[]{100, 100, 100, 100};
-//        PVector resultantTicks = this.motors.getNetEncoderVector(fakeTicks);
-//        assertEquals(new PVector(0, 100), resultantTicks);
-//
-//        // Wheels on opposite sides are moving together
-//        fakeTicks = new int[]{100, -100, 100, -100};
-//        resultantTicks = this.motors.getNetEncoderVector(fakeTicks);
-//        assertEquals(new PVector(100, 0), resultantTicks);
+        //  Moving 45 degrees
+        int[] fakeTicks = new int[]{100, 100, 100, 100};
+        PVector resultantTicks = this.motors.getNetPositionVector(fakeTicks);
+        assertEquals(new PVector(0, 100).getMagnitude(), resultantTicks.getMagnitude());
+
+        // Wheels on opposite sides are moving together, strafing sideways
+        fakeTicks = new int[]{100, -100, 100, -100};
+        resultantTicks = this.motors.getNetPositionVector(fakeTicks);
+        assertEquals(new PVector(100, 0).getMagnitude(), resultantTicks.getMagnitude());
 
         // Wheels are all moving in the same direction after motor directions are applied.
-        int[] fakeTicks = new int[]{745, 710, 761, 742};
-        int dist = Motors.distanceToEncoderTicks(0.6);
-        PVector resultantTicks = this.motors.getNetEncoderVector(fakeTicks);
-        double mag = resultantTicks.getMagnitude();
-        assertEquals(new PVector(0, 100), resultantTicks);
+        fakeTicks = new int[]{100, 100, 100, 100};
+        resultantTicks = this.motors.getNetPositionVector(fakeTicks);
+        assertEquals(new PVector(0, 100).getMagnitude(), resultantTicks.getMagnitude());
     }
+
+    @Test
+    public void testGetMotorIndexesForSide() {
+        int[] left = {3, 0};
+        assertArrayEquals(motors.getMotorsIndexesForSide(Motors.MotorSide.LEFT), left);
+
+        int[] right = {1, 2};
+        assertArrayEquals(motors.getMotorsIndexesForSide(Motors.MotorSide.RIGHT), right);
+
+        int[] front = {0, 1};
+        assertArrayEquals(motors.getMotorsIndexesForSide(Motors.MotorSide.FRONT), front);
+
+        int[] back = {2, 3};
+        assertArrayEquals(motors.getMotorsIndexesForSide(Motors.MotorSide.BACK), back);
+    }
+
+    @Test
+    public void testReverseSide() {
+        double[] input = {1, 1, 1, 1};
+        this.motors.reverseMotorsOnSide(input, Motors.MotorSide.LEFT);
+        assertArrayEquals(input, new double[]{-1, 1, 1, -1});
+    }
+
+    @Test
+    public void testRotatePowers() {
+        double[] motorPowers = {0, 0, 0, 0};
+
+        // We are rotating counter clockwise so left should be negative and right should be positive
+        this.motors.motorRotationPowers(0.5, motorPowers);
+        assertArrayEquals(motorPowers, new double[]{-0.5, 0.5, 0.5, -0.5});
+
+        motorPowers = new double[]{0, 0, 0, 0};
+        this.motors.motorRotationPowers(-0.5, motorPowers);
+        assertArrayEquals(motorPowers, new double[]{0.5, -0.5, -0.5, 0.5});
+    }
+
 
 }

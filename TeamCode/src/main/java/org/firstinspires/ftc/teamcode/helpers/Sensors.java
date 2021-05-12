@@ -13,16 +13,17 @@ import org.firstinspires.ftc.robotcore.external.navigation.*;
 public class Sensors {
     private final LinearOpMode opMode;
     HardwareMap hardwareMap;
-    public Distance distance;
-    public Color color;
-//    public IMU imu;
+    //    public Distance distance;
+//    public Color color;
+    public IMU imu;
+
     Sensors(LinearOpMode opMode) {
         this.hardwareMap = opMode.hardwareMap;
         this.opMode = opMode;
 
-        this.distance = new Distance();
-//        this.imu= new IMU();
-        this.color = new Color();
+//        this.distance = new Distance();
+        this.imu = new IMU();
+//        this.color = new Color();
     }
 
     class IMU {
@@ -45,10 +46,15 @@ public class Sensors {
             }
         }
 
-        public double getIMUAngleConverted() {
+        public double getAngle() {
             Orientation orientation = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            double angle = orientation.firstAngle;
-            angle =  angle < 0 ? angle + 360 : angle;
+            return orientation.firstAngle;
+        }
+
+        public double getAngleConverted() {
+            // The AxesOrder depends on how the expansion hub is mounted
+            double angle = getAngle();
+            angle = angle < 0 ? angle + 360 : angle;
             return angle;
         }
     }
