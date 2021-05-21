@@ -6,13 +6,11 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 public class Servos {
     HardwareMap hardwareMap;
-    Servo balloonPopper;
+    Servo gateCloser;
 
     Servos(OpMode opMode) {
         this.hardwareMap = opMode.hardwareMap;
-
-        // TODO this doesn't actually exist yet. Need to create in app settings.
-//        this.balloonPopper = this.hardwareMap.get(Servo.class, "balloonPopper");
+        this.gateCloser = this.hardwareMap.get(Servo.class, "gateCloser");
 
     }
 }

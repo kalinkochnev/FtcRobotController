@@ -1,0 +1,47 @@
+depot to end:
+=====================
+
+17 in to right
+77 in backwards
+close gate
+67 in forwards
+right 69 in
+back 69 in
+rotate left 90 deg
+
+
+back 80 in
+left 20 in
+open gate
+
+# at the end we are guaranteed to be in the corner
+
+
+
+end to home:
+==========================
+
+69 in forward
+close gate
+72 inches right
+4
+ 90 deg ()clockwise
+85 inches left
+20 inches forward
+
+# guaranteed to be at home
+
+
+home to balloon:
+=========================
+
+back 3 inch
+right 120 inch
+
+
+balloon pop:
+=============================
+
+10 in right
+10 in left
+4 in backrotate right

@@ -6,13 +6,13 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.helpers.MoveSequence;
 import org.firstinspires.ftc.teamcode.helpers.Robot;
 
-@Autonomous(name = "FirstOpMode")
-public class FirstOpMode extends LinearOpMode {
+@Autonomous(name = "Testing")
+public class AutonOpMode extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
     private Robot robot;
     double[][] inputs = {
-        {17, 270},
-        {77, 180}
+            {17, 270},
+            {77, 180}
     };
 
 
@@ -50,9 +50,9 @@ public class FirstOpMode extends LinearOpMode {
         // this.robot.servos.gateCloser.setPosition();
         // spikeToDrop.execute();
         // droptoStart.execute();
-        
+
         // spikeToDrop.execute();
-        
+
         while (!this.isStopRequested()) {
             continue;
         }
