@@ -151,7 +151,7 @@ public class Robot {
      *
      * @param maxPower  greatest power/speed of robot during movement (between 0 and 1)
      * @param distance  distance to travel in specified direction (meters)
-     * @param angleHold direction to translate towards (in degrees)
+     * @param angleHold direction to translate towards (in degrees). Follows unit circle. 90 degrees is forward.
      */
     public void moveCardinal(double maxPower, double distance, double angleHold) {
         this.motors.resetEncoders();

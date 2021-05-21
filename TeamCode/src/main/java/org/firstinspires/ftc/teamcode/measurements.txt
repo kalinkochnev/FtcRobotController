@@ -1,3 +1,8 @@
+right=0
+back=270
+left=180
+forward=90
+
 depot to end:
 =====================
 

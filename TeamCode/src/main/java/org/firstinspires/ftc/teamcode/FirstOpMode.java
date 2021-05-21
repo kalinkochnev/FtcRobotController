@@ -10,51 +10,48 @@ import org.firstinspires.ftc.teamcode.helpers.Robot;
 public class FirstOpMode extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
     private Robot robot;
-    double[][] inputs = {
-        {17, 270},
-        {77, 180}
+    
+    // double[][] inputs = {
+    //     {17, 0},
+    //     {77, 270}
+    // };
+
+    double[][] startToBalloonInputs = {
+       {3,270},
+       {120,0} 
     };
 
-
     // private MoveSequence spikeToDrop = new MoveSequence({
-    //     {67, 0},
-    //     {69, 270},
-    //     {69, 180},
-    //     {0, 90},
-    //     {80, 180},
-    //     {20, 90}
-    // });
-
-    // private MoveSequence dropToStart = new MoveSequence ({
+    //     {67, 90},
     //     {69, 0},
-    //     {},
+    //     {69, 270},
+    //     {0, 90},
+    //     {80, 270},
+    //     {20, 180}
     // });
+    
+    double[][] balloonPopInputs = {
+        {10, 90},
+        {10, 270},
+        {4, 180}
+    };
 
-    // private MoveSequence balloonPop = new MoveSequence ({
-    //     {},
-    //     {},
-    // });
-
-
+    
     @Override
     public void runOpMode() {
         this.robot = new Robot(this);
-        MoveSequence startToSpike = new MoveSequence(robot, inputs);
+        MoveSequence startToBalloon = new MoveSequence(robot, startToBalloonInputs);
+        MoveSequence balloonPop = new MoveSequence(robot, balloonPopInputs);
 
         while (!this.isStarted()) {
             continue;
         }
 
-        startToSpike.execute();
+        startToBalloon.execute();
 
-        // this.robot.servos.gateCloser.setPosition();
-        // spikeToDrop.execute();
-        // droptoStart.execute();
-        
-        // spikeToDrop.execute();
-        
-        while (!this.isStopRequested()) {
-            continue;
+        for (int i = 0; i < 4; i++) {
+            balloonPop.execute();
         }
-    }
+    
+    }       
 }
