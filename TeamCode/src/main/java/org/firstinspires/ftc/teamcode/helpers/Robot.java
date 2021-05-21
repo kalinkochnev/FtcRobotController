@@ -7,11 +7,16 @@ import org.firstinspires.ftc.teamcode.tntcorelib.util.RealSimplerHardwareMap;
 import java.util.Arrays;
 
 public class Robot {
+    private final Telemetry telemetry;
+    private final LinearOpMode opMode;
     public Motors motors;
     public Sensors sensors;
-    Telemetry telemetry;
-    LinearOpMode opMode;
 
+    /**
+     * Instantiates all motors and sensors to be used.
+     *
+     * @param opMode the LinearOpMode to be passed when instantiated in the opmode
+     */
     public Robot(LinearOpMode opMode) {
         RealSimplerHardwareMap hardwareMap = new RealSimplerHardwareMap(opMode.hardwareMap);
 
@@ -19,13 +24,12 @@ public class Robot {
         this.telemetry = opMode.telemetry;
         this.opMode = opMode;
         this.sensors = new Sensors(opMode);
-
     }
     /**
      * This automatically tries to maintain a translational angle while strafing and rotating (if used) for a certain
      * distance. Also ramps up/down as it starts/ends it's movement to be more accurate.
-     * @param power maximum speed of the robot
-     * @param distance distance to travel in meters
+     * @param power     maximum speed of the robot
+     * @param distance  distance to travel in meters
      * @param direction direction to translate towards (in degrees)
      */
 //    public void holdAngle(double power, double distance, double direction) {
@@ -125,42 +129,83 @@ public class Robot {
 //    }
 
     /**
-     * Strafes the robot in the direction of the specified angle at the maxPower provided
+     * Strafes the robot in the direction of the specified angle at the power provided until powers are set back to 0.
      *
-     * @param power
-     * @param angleHold
+     * @param power     power/speed of robot during movement (between 0 and 1)
+     * @param angleHold angle of movement for the robot (in degrees)
+     * @return calculated powers to spin each wheel at to create the desired movement
      */
-    public void moveCardinal(double power, double angleHold) {
+    public double[] moveCardinal(double power, double angleHold) {
         angleHold = Math.toRadians(angleHold);
 
         double[] motorPowers = this.motors.translationWeights(angleHold, power);
         this.motors.setPowers(motorPowers);
+        return motorPowers;
     }
 
     /**
      * Strafes the robot in the direction of the specified angle at the maxPower provided for a certain distance.
+     * Slowly ramps up/down speed of robot to prevent slippage.
      *
-     * @param maxPower
-     * @param angleHold
+     * @param maxPower  greatest power/speed of robot during movement (between 0 and 1)
+     * @param distance  distance to travel in specified direction (meters)
+     * @param angleHold direction to translate towards (in degrees)
      */
     public void moveCardinal(double maxPower, double distance, double angleHold) {
+        angleHold = Math.toRadians(angleHold);
+
+        double targetTicks = Motors.distanceToEncoderTicks(distance); // Distance in ticks to the end goal
+
+
+        double rampKickIn = 0.25; // Ramping kicks in at the first quarter of the drive and last quarter
+        double rampOffset = 0.02;
+        double rampupTicks = rampKickIn * targetTicks;
+
+        double[] maxMotorPowers = this.motors.translationWeights(angleHold, maxPower);
+        double[] currMotorPowers = new double[]{0, 0, 0, 0};
+
+        int ticksTraveled = 0;
+
         this.motors.resetEncoders();
-        this.moveCardinal(maxPower, angleHold);
+        while (ticksTraveled < targetTicks && !this.opMode.isStopRequested()) {
+            ticksTraveled = (int) (Math.round(this.motors.getNetPositionVector().getMagnitude() * 100) / 100);
 
-        double targetTicks = Motors.distanceToEncoderTicks(distance);
-        int tickTravelled = 0;
 
-        while (tickTravelled < targetTicks && !this.opMode.isStopRequested()) {
-            tickTravelled = (int) (Math.round(this.motors.getNetPositionVector().getMagnitude() * 100) / 100);
+            double ticksTillTarget = targetTicks - ticksTraveled;
+            telemetry.addData("Ticks till target: ", ticksTillTarget);
+            // IF ramping
+            if (ticksTraveled <= rampupTicks) { // If in the beginning percent of the movement to do start ramping
+                telemetry.addData("Ramp status: ", "Up");
+                for (int motor = 0; motor < 4; motor++) {
+                    // The motor power scales proportionally to the distance already travelled
+                    // So the further it travels, the faster it ramps up (to anyone who is interested, the ticks travelled
+                    // grows exponentially/continuously during this time... yay calculus)
+                    currMotorPowers[motor] = maxMotorPowers[motor] * (rampOffset + (ticksTraveled / rampupTicks));
+                }
+            } else if (ticksTillTarget <= rampupTicks) { // If in the last percent of the movement to do the end ramping
+                telemetry.addData("Ramp status: ", "Down");
+                for (int motor = 0; motor < 4; motor++) {
+                    // Ramps down speed exponentially
+                    currMotorPowers[motor] = maxMotorPowers[motor] - rampOffset * (-rampOffset + (ticksTillTarget / rampupTicks));
+                }
+            } else {
+                telemetry.addData("Ramp status: ", "None");
+                currMotorPowers = maxMotorPowers.clone();
+            }
+            telemetry.addData("Motor powers: ", Arrays.toString(currMotorPowers));
+            telemetry.update();
+
+
+            this.motors.setPowers(currMotorPowers);
         }
         motors.setPowers(0);
 
     }
 
     /**
-     * Rotates the robot at the specified angular power. Negative angular means counter clockwise rotation.
+     * Rotates the robot at the specified angular power until powers are set back to 0.
      *
-     * @param angularPower
+     * @param angularPower Angular power to spin robot at. Negative angularPower means clockwise rotation.
      */
     public void rotate(double angularPower) {
         double[] rotationPowers = this.motors.motorRotationPowers(angularPower, new double[]{0, 0, 0, 0});
@@ -170,8 +215,8 @@ public class Robot {
     /**
      * Rotates the robot at the specified angular power to reach a final angle
      *
-     * @param angularPower
-     * @param angle
+     * @param angularPower Angular power to spin robot at.
+     * @param angle        Angle (in degrees) to rotate from current orientation. Negative angle means clockwise rotation.
      */
     public void rotate(double angularPower, double angle) {
         this.motors.resetEncoders();
@@ -187,55 +232,4 @@ public class Robot {
         }
         this.motors.setPowers(0);
     }
-
-    /**
-     * This automatically tries to maintain a specified angle when rotating. Also ramps up/down as it starts/ends it's movement to be more accurate.
-     * @param rotationMaxPow max speed of the robot during rotation
-     * @param targetAngle angle to try and spin to
-     * @param forceDirection  // TODO I have no idea what this does yet
-     * @param direction // TODO I have no idea what this does yet
-     */
-//    public void rotateAngle(double rotationMaxPow, double targetAngle, boolean forceDirection, String direction) {
-//
-//        // Direction is either "ccw" or "cw", else don't force direction
-//
-//        double angleTolerance = 2;
-//        double timeUnderToleance = 200;
-//        boolean inTolerance = false;
-//
-//        ElapsedTime timer = new ElapsedTime();
-//
-//        while (!this.opMode.isStopRequested()) {
-//
-//            double tmpAngle = this.sensors.imu.getIMUAngleConverted();
-//            double angle = getAngleDifference(tmpAngle, targetAngle);
-//            double angleDir = getAngleDifferenceInDirection(direction, tmpAngle, targetAngle);
-//
-//            if (forceDirection) {
-//                if (Math.abs(angleDir) >= 180) {
-//                    angle = angleDir;
-//                }
-//            }
-//
-//            if (Math.abs(angle) < angleTolerance) {
-//                if (!inTolerance) {
-//                    timer.reset();
-//                }
-//                inTolerance = true;
-//                if (timer.milliseconds() > timeUnderToleance) {
-//                    break;
-//                }
-//            }
-//            else {
-//                inTolerance = false;
-//            }
-//
-//            double k = 0.04;
-//            double correction = angle * k;
-//
-//            double motorPower = Math.min(correction, rotationMaxPow);
-//            this.motors.setPowers(motorPower);
-//        }
-//        this.motors.setPowers(0);
-//    }
 }

@@ -156,10 +156,11 @@ public class Motors {
      */
     public double[] applyMotorDirections(double[] motorPowers) {
         int[] directions = getMotorDirections();
+        double[] powers = motorPowers.clone();
         for (int m = 0; m < 4; m++) {
-            motorPowers[m] *= directions[m];
+            powers[m] *= directions[m];
         }
-        return motorPowers;
+        return powers;
     }
     public int[] applyMotorDirections(int[] motorEncoderTicks) {
         return Utils.toIntArr(this.applyMotorDirections(Utils.toDoubleArr(motorEncoderTicks)));

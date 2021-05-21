@@ -19,8 +19,10 @@ public class FirstOpMode extends LinearOpMode {
             continue;
         }
 
-        this.robot.rotate(0.1, 180);
-        this.robot.rotate(0.1, -180);
+        this.robot.moveCardinal(0.2, 1, 90);
+        this.robot.moveCardinal(0.2, 1, 270);
+        this.robot.moveCardinal(0.2, 0.6*Math.sqrt(2), 45);
+        this.robot.moveCardinal(0.2, 0.6*Math.sqrt(2), 225);
 
         while (!this.isStopRequested()) {
             continue;

@@ -4,6 +4,8 @@
  * It is extraordinarily rare that you will ever need to edit this file.
  */
 
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 configurations {
     doc { transitive false }
 }
