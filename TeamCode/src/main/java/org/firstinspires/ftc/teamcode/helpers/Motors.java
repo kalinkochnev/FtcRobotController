@@ -12,9 +12,6 @@ public class Motors {
     public static final double WHEEL_CIRCUMFERENCE = Math.PI * WHEEL_DIAMETER; // [meters]
     public static final double DISTANCE_PER_TICK = WHEEL_CIRCUMFERENCE / TICKS_PER_WHEEL_ROTATION;
 
-    // Modify this number so the proper distance is travelled
-    public static final double DIST_MULTIPLIER = Math.sqrt(2); // This number was magically calculated empirically. By luck it was sqrt(2)
-
     SimplerHardwareMap hardwareMap;
 
     protected DcMotor lfMotor, rfMotor, rbMotor, lbMotor;
@@ -207,7 +204,9 @@ public class Motors {
         }
 
         // Divide by two because vectors are really counted twice and divide by sqrt(2) b/c we want to have the same magnitude
-        // as the individual vectors. This is possible because of the symmetry of the force vectors from the mecanum wheels
+        // as the individual vectors. This is possible only because of the symmetry of the force vectors from the mecanum wheels.
+        // If somehow the wheel directions are not applied at 45 degree multiples, the sqrt(2) trick would not work and would depend
+        // on the angle
         PVector resultant = PVector.add(wheelVectors).scalarDivide(2 * Math.sqrt(2));
         return resultant;
     }
